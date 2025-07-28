@@ -69,7 +69,7 @@ class Manager:
             container=container
         )
 
-        container.start()
+        self.servers[id].start()
 
         return id
 
