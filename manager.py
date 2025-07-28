@@ -9,6 +9,9 @@ from pydantic import BaseModel
 from socket import SocketIO
 
 class Poller(Thread):
+    """
+    stores all open sockets to docker containers
+    as soon as data is available to read (stdout/stderr) from one socket, it calls send_from_console on the associated server"""
     def run(self) -> None:
         self.selector = selectors.DefaultSelector()
         self.data: Dict[int, Server] = {}
@@ -33,14 +36,17 @@ class Manager:
         self.client = docker.DockerClient(base_url='unix://var/run/docker.sock')
     
     def create_websocket(self, id: str, ws: WebSocket):
+        """associate a websocket connection with the given container id"""
         server = self.servers[id]
         server.console_listeners.append(ws)
 
     def send_console_in(self, id: str, data: str):
+        """send data to a servers stdin"""
         server = self.servers[id]
         server.send_to_console_in(data + "\n")
     
     def find_running_servers(self):
+        """find all servers that have been created with this poc to store their ids in memory"""
         containers = self.client.containers.list(all=True,filters={
             "label": "mc-docker"
         })
@@ -54,6 +60,7 @@ class Manager:
             )
 
     def create_server(self) -> str:
+        """create a server"""
         container = self.client.containers.create(
             image="alpine",
             entrypoint="sh",
@@ -91,6 +98,9 @@ class Server:
 
     
     def _connect(self):
+        """The magic: attach to the docker container and access stdin/stdout/stderr as a stream
+        set the socket to nonblocking to use select
+        allow writing to stdin"""
         self.attach_socket = self.container.attach_socket(params={'stdin': 1, 'stdout': 1, 'stderr': 1, 'stream':1})
         self.attach_socket._sock.setblocking(False) # type: ignore
         self.attach_socket._writing = True # type: ignore
@@ -120,6 +130,7 @@ class Server:
         self.attach_socket.write(text.encode())
 
     async def send_from_console(self, data: bytes):
+        """send some data to all websockets associated with this server"""
         to_remove: List[WebSocket] = []
         for ws in self.console_listeners:
             try:
