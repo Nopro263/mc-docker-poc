@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="history" style="height: 70vh;width: 50vw;overflow:scroll;background-color:#f1f1f1"></div>
+    <input id="cmd" type="text"/>
+    <script type="module">
+        const url = new URL(window.location);
+        const h = document.querySelector("#history");
+        const input = document.querySelector("#cmd");
+
+        const socket = new WebSocket(`ws://localhost:8000/api/server/${url.searchParams.get("id")}/console`);
+
+        // Connection opened
+        socket.addEventListener("open", (event) => {
+            document.title = "Connected";
+        });
+
+        // Listen for messages
+        socket.addEventListener("message", (event) => {
+            let e = document.createElement("div");
+            e.innerText = "< " +JSON.parse(event.data).console_out;
+            h.appendChild(e);
+            h.scrollTop = h.scrollHeight;
+        });
+
+        input.addEventListener("change", (ev) => {
+            socket.send(input.value)
+            let e = document.createElement("div");
+            e.innerText = "> " + input.value;
+            h.appendChild(e);
+            input.value = "";
+        })
+    </script>
+</body>
+</html>

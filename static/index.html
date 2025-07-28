@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC-Docker</title>
+</head>
+<body>
+    <button id="create">Create Server</button>
+    <h4>My Servers</h4>
+    <div id="servers"></div>
+
+    <script type="module">
+        const create = async () => {
+            let response = await fetch("/api/servers", {
+                method: "POST",
+            });
+
+            let id = await response.json()
+            await load_servers()
+        }
+
+        const load_servers = async () => {
+            let response = await fetch("/api/servers");
+            let servers = await response.json();
+
+            const eServers = document.querySelector("#servers");
+            eServers.innerHTML = "";
+
+            servers.forEach((v) => {
+                const server = document.createElement("a");
+                server.href = "/console.html?id=" + v;
+                server.innerText = v;
+
+                const s = document.createElement("div");
+                s.appendChild(server);
+
+                eServers.appendChild(s)
+            });
+        }
+
+        document.querySelector("#create").addEventListener("click", async (ev) => {
+            await create();
+        });
+
+        await load_servers();
+    </script>
+</body>
+</html>
