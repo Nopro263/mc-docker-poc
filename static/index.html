@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MC-Docker</title>
+
+    <style>
+        .online {
+            background-color: rgb(9, 224, 9);
+        }
+
+        .offline {
+            background-color: rgb(224, 52, 9);
+        }
+    </style>
 </head>
 <body>
     <button id="create">Create Server</button>
@@ -20,6 +30,22 @@
             await load_servers()
         }
 
+        const start = async (id) => {
+            let response = await fetch("/api/server/" + id + "/start", {
+                method: "POST",
+            });
+
+            await load_servers()
+        }
+
+        const stop = async (id) => {
+            let response = await fetch("/api/server/" + id + "/stop", {
+                method: "POST",
+            });
+
+            await load_servers()
+        }
+
         const load_servers = async () => {
             let response = await fetch("/api/servers");
             let servers = await response.json();
@@ -29,11 +55,24 @@
 
             servers.forEach((v) => {
                 const server = document.createElement("a");
-                server.href = "/console.html?id=" + v;
-                server.innerText = v;
+                server.href = "/console.html?id=" + v.id;
+                server.innerText = v.name;
 
                 const s = document.createElement("div");
+                const btn = document.createElement("button");
+
+                if(v.online) {
+                    s.classList.add("online");
+                    btn.innerText = "Stop"
+                    btn.addEventListener("click", async () => {await stop(v.id)})
+                } else {
+                    s.classList.add("offline");
+                    btn.innerText = "Start"
+                    btn.addEventListener("click", async () => {await start(v.id)})
+                }
+
                 s.appendChild(server);
+                s.appendChild(btn);
 
                 eServers.appendChild(s)
             });
